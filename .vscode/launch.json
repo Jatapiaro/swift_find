@@ -1,1 +1,44 @@
-{}
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift_find}",
+            "name": "Debug swiftfind",
+            "target": "swiftfind",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug swiftfind"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift_find}",
+            "name": "Release swiftfind",
+            "target": "swiftfind",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release swiftfind"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift_find}",
+            "name": "Debug SwiftFind",
+            "target": "SwiftFind",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug SwiftFind"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift_find}",
+            "name": "Release SwiftFind",
+            "target": "SwiftFind",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release SwiftFind"
+        }
+    ]
+}
