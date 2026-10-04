@@ -1,14 +1,11 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
-//
-// Swift Argument Parser
-// https://swiftpackageindex.com/apple/swift-argument-parser/documentation
-
 import ArgumentParser
 
 @main
 struct swiftfind: ParsableCommand {
+    @Argument(help: "The word to search.")
+    var word: String
+
     mutating func run() throws {
-        print("Hello, world!")
+        print("Hello, world! \(word)")
     }
 }
