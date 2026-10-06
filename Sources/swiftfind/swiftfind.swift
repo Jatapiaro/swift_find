@@ -33,7 +33,7 @@ struct SwiftFind: ParsableCommand {
   mutating func run() throws {
     let res = findFilesInPath(path: path, recursively: true)
     for r in res {
-        print(r)
+      print(r)
     }
   }
 }
