@@ -29,7 +29,7 @@ func findWordInFile(file: String, word: String) -> [Int: String] {
     return results
   }
   defer { try? fileHandle.close() }
-  // FileHandle.bytes is not available on Windows
+
 
   var lineCounter: Int = 0
   func processData(lineData: Data, word: String) {
@@ -41,6 +41,7 @@ func findWordInFile(file: String, word: String) -> [Int: String] {
     }
   }
 
+  // FileHandle.bytes is not available on Windows
   var buffer: Data = Data()
   do {
     while let chunk = try fileHandle.read(upToCount: 4096), !chunk.isEmpty {
