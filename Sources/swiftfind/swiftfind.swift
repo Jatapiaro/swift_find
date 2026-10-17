@@ -1,9 +1,12 @@
 import ArgumentParser
 import Foundation
 
-func findFilesInPath(path: String?, recursively: Bool = false) -> [String] {
+func findFilesInPath(path: String?, excluding: Set<String>?, recursively: Bool = false) -> [String]
+{
   let fm: FileManager = FileManager.default
   let path: URL = URL(fileURLWithPath: path ?? fm.currentDirectoryPath)
+  let resourceKeys: Set<URLResourceKey> = Set([.isDirectoryKey, .nameKey])
+
   var results: [String] = []
   var options: FileManager.DirectoryEnumerationOptions = []
   if !recursively {
@@ -14,9 +17,18 @@ func findFilesInPath(path: String?, recursively: Bool = false) -> [String] {
     at: path, includingPropertiesForKeys: nil, options: options)
   {
     for case let fileURL as URL in enumerator {
-      if !fileURL.hasDirectoryPath {
-        results.append(fileURL.path)
+      guard let values = try? fileURL.resourceValues(forKeys: resourceKeys) else {
+        continue
       }
+
+      if values.isDirectory == true {
+        if let name = values.name, excluding?.contains(name) == true {
+          enumerator.skipDescendants()
+        }
+        continue
+      }
+
+      results.append(fileURL.path)
     }
   }
 
@@ -29,7 +41,6 @@ func findWordInFile(file: String, word: String) -> [Int: String] {
     return results
   }
   defer { try? fileHandle.close() }
-
 
   var lineCounter: Int = 0
   func processData(lineData: Data, word: String) {
@@ -69,11 +80,19 @@ struct SwiftFind: ParsableCommand {
   var word: String
   @Argument(help: "The path to scan files for the given word.")
   var path: String? = nil
+  @Option(
+    help: "The allowlist of file extensions.",
+    transform: { Set($0.split(separator: ",").map(String.init)) })
+  var extensions: Set<String>? = nil
+  @Option(
+    help: "The denylist of directory names.",
+    transform: { Set($0.split(separator: ",").map(String.init)) })
+  var exclude: Set<String>? = nil
 
   mutating func run() throws {
-    let res = findFilesInPath(path: path, recursively: true)
+    let res = findFilesInPath(path: path, excluding: exclude, recursively: true)
     for r in res {
-      findWordInFile(file: r, word: word)
+      print(r, findWordInFile(file: r, word: word))
     }
   }
 }
