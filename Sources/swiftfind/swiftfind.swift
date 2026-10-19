@@ -47,44 +47,44 @@ func findWordInFile(file: String, word: String) async -> [Int: String] {
     return line.lowercased().contains(word.lowercased())
   }
 
-// FileHandle.bytes is not available on Windows
-#if !os(macOS)
-  func processData(lineData: Data, word: String) {
-    lineCounter += 1
-    if let line: String = String(data: lineData, encoding: .utf8),
-      isWordInLine(line: line, word: word)
-    {
-      results[lineCounter] = line
-    }
-  }
-
-  var buffer: Data = Data()
-  do {
-    while let chunk = try fileHandle.read(upToCount: 4096), !chunk.isEmpty {
-      buffer.append(chunk)
-      while let newLineIndex = buffer.firstIndex(of: 0x0A) {
-        // Get from the start of the buffer, but before \n
-        let lineData = buffer[buffer.startIndex..<newLineIndex]
-        processData(lineData: lineData, word: word)
-        // Clean the buffer and remove from start of the buffer, including \n
-        buffer.removeSubrange(buffer.startIndex...newLineIndex)
-      }
-    }
-
-    if !buffer.isEmpty {
-      processData(lineData: buffer, word: word)
-    }
-  } catch {}
-#endif
-
-  do {
-    for try await line: String in fileHandle.bytes.lines {
+  // FileHandle.bytes is not available on Windows
+  #if os(Windows)
+    func processData(lineData: Data, word: String) {
       lineCounter += 1
-      if isWordInLine(line: line, word: word) {
+      if let line: String = String(data: lineData, encoding: .utf8),
+        isWordInLine(line: line, word: word)
+      {
         results[lineCounter] = line
       }
     }
-  } catch {}
+
+    var buffer: Data = Data()
+    do {
+      while let chunk = try fileHandle.read(upToCount: 4096), !chunk.isEmpty {
+        buffer.append(chunk)
+        while let newLineIndex = buffer.firstIndex(of: 0x0A) {
+          // Get from the start of the buffer, but before \n
+          let lineData = buffer[buffer.startIndex..<newLineIndex]
+          processData(lineData: lineData, word: word)
+          // Clean the buffer and remove from start of the buffer, including \n
+          buffer.removeSubrange(buffer.startIndex...newLineIndex)
+        }
+      }
+
+      if !buffer.isEmpty {
+        processData(lineData: buffer, word: word)
+      }
+    } catch {}
+  #else
+    do {
+      for try await line: String in fileHandle.bytes.lines {
+        lineCounter += 1
+        if isWordInLine(line: line, word: word) {
+          results[lineCounter] = line
+        }
+      }
+    } catch {}
+  #endif
 
   return results
 }
@@ -105,11 +105,25 @@ struct SwiftFind: AsyncParsableCommand {
   var exclude: Set<String>? = nil
 
   mutating func run() async throws {
-    let res = findFilesInPath(path: path, excluding: exclude, recursively: true)
-    for r in res {
-      let result: [Int : String] = await findWordInFile(file: r, word: word)
-      if !result.isEmpty {
-        print(r, result)
+    let jobsQueue = AsyncQueue()
+    let filesToExplore = findFilesInPath(path: path, excluding: exclude, recursively: true)
+    let wordToFind = word
+
+    await withThrowingTaskGroup(of: [Int: String].self) { group in
+      for file in filesToExplore {
+        group.addTask {
+          try await jobsQueue.enqueue(job: { await findWordInFile(file: file, word: wordToFind) })
+        }
+      }
+
+      do {
+        for try await result: [Int: String] in group {
+          if !result.isEmpty {
+            print(result)
+          }
+        }
+      } catch {
+        print("error")
       }
     }
   }
